@@ -46,6 +46,44 @@ def JeibaCutWords(input_df, target, label='Class', id='ID'):
     temp_df = pd.DataFrame(temp_data)
     return temp_df
 
+def JeibaCutWords_sim(input_df, target, label='Class', id='ID'):
+    cols = [target]  # 決定要選取那些列，當作文字來源(可複選)
+    corpus_cutted = list([])  # 儲存斷詞後的句子
+    corpus_class = list([]) # 句子的分類
+    corpus_id = list([]) # 句子的編號
+
+    # 設定字典
+    jieba.set_dictionary('./Jeiba/dict.txt')
+    jieba.load_userdict('./Jeiba/my.dict.txt')  # 載入自訂字典
+
+    # 設定停用詞
+    with open(r'./Jeiba/stop_words.txt', 'r', encoding='utf8') as f:
+        stops = f.read().split('\n')
+
+    for row_index, row in enumerate(input_df.index):
+        #print("[%d]" % (row))
+        temp_str = str()
+        one_line_cutted = list([])
+        for col_index, column in enumerate(cols):
+            sentence = input_df.loc[row, column]  # 選取一列
+            temp_str = temp_str + sentence + "," # 欄位資料合併
+        #print("合併後句子: %s" % (temp_str))
+        # 結巴斷詞
+        for word in jieba.cut(temp_str, cut_all=True):
+            if (word not in stops) and (word != ' '):
+                one_line_cutted.append(word)
+        #print(one_line_cutted)
+        corpus_cutted.append(one_line_cutted)  # 斷詞後的每篇廣告
+        corpus_class.append(input_df.loc[row, label])
+        corpus_id.append(input_df.loc[row, id])
+    # 收集完的資料存成dataframe
+    temp_data = {"id": corpus_id,
+                 "sentence": corpus_cutted,
+                 "class": corpus_class
+                }
+    temp_df = pd.DataFrame(temp_data)
+    return temp_df
+
 # 若是檢查到違法的關鍵字，直接標註為違法廣告，並記錄在keyword_flag
 def AppendKeywordCheck(input_df):
     keyword_flag = np.zeros((input_df.shape[0],), dtype=np.int)  # 建立一個key word check陣列
